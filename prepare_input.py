@@ -75,7 +75,7 @@ def add_special_vocab(word_dict):
 
 
 def save_vocab(args, word_dict):
-	print("----------------save vocab----------------")
+	print("INFO: save vocab")
 	with open(os.path.join(args['data_dir'], "vocab.pkl"), 'wb') as f:
 		pkl.dump(word_dict,f)
 
@@ -83,12 +83,13 @@ def save_vocab(args, word_dict):
 def prepare_vocab(args, data):
 	clean_text_all = get_text(args,data)
 	word_dict = get_vocab(clean_text_all)
-	add_special_vocab(word_dict)	
+	add_special_vocab(word_dict)
+	data['vocab'] = word_dict
 	save_vocab(args, word_dict)
 
 
 def load_vocab(args):
-	print("---------------load vocab--------------")
+	print("INFO: load vocab")
 	with open(os.path.join(args['data_dir'] ,"vocab.pkl"), 'rb') as f:
 		word_dict = pkl.load(f)
 	return word_dict
@@ -107,18 +108,47 @@ def prepare_X(args, data):
 				else:
 					x[i][j] = word_dict[tokens[i]]
 		data[key]['x'] = x
+		print("INFO: Peek "+key)
+		for i in range(3):
+			print(data[key]['cln_text'][i])
+			print(data[key]['x'][i])
+			try:
+				print(data[key]['label'][i])
+			except:
+				print("")
 
 def prepare_Y(args, data):
-	print("Already Done!")
+	print("Y data Already IN!")
 
 def to_numpy(args, data):
-	print("----------data to numpy-----------")
+	print("INFO: data to numpy file")
 	for key in data:
 		np.save(os.path.join(args['data_dir'], key+".x"),data[key]['x'])
 	try:
 		np.save(os.path.join(args['data_dir'], key+".y"), data[key]['y'])
 	except:
-		print("No labels for " + key)
+		print("WARNING: No labels for " + key)
+
+def prepare_glove(args, data):
+    glove = dict()
+    if args['glove']:
+    	print("INFO: Reading Glove Vectors........")
+	    with open(os.path.join(args['data_dir'], args['glove']), encoding='utf-8') as f:
+		    for line in f:
+    		    values = line.split()
+        		word = values[0]
+       			coefs = np.asarray(values[1:], dtype='float32')
+        		glove[word] = coefs
+    embedding_weight = np.random.random((len(data['vocab']), coefs.shape[0]))
+    cnt = 0
+    for word, idx in data['vocab']:
+    	if word in glove:
+    		embedding_weight[idx] = embeddings_index[word]
+    		cnt += 1
+    print("INFO: "+str(cnt) +" words in glove out of " +str(len(data['vocab'])) + " total vocabs")
+
+
+
 
 def main():
 	parser = argparse.ArgumentParser() 
@@ -130,11 +160,10 @@ def main():
 	parser.add_argument("class_num")
 	parser.add_argument("--glove")
 	parser.add_argument("class_num")
-
 	parser.add_argument("--max_vocab", default = 30000)
 	args = parser.parse_args()
 	args = vars(args)
-	print("---------------parameters----------------")
+	print("INFO: parameters")
 	print(args)
 
 	data = dict()
