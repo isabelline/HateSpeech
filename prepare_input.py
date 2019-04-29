@@ -35,13 +35,16 @@ def read_file(args, data):
 
 def clean_then_tokenize_text(data):
 	text_all = []
+	text_processor = TextPreProcessor(
+		normalize=['user','url'],)
 	for key in data:
 		text = data[key]
 		a= []
 		temp = ""
 		for line in text:
 			if True:
-				temp=" ".join( text_to_word_sequence(line) ) 
+				line = text_processor.pre_process_doc(line)
+				temp=" ".join( text_to_word_sequence(line) )
 				a.append(temp)
 		data[key]['cln_text'] = a
 		text_all +=a
